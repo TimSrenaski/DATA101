@@ -1,0 +1,5 @@
+year,geo_name,geo,pop_2ormore,pop_2ormore_moe,pop_asian,pop_asian_moe,pop_black,pop_black_moe,pop_hawaiian,pop_hawaiian_moe,pop_latino,pop_latino_moe,pop_native,pop_native_moe,pop_other,pop_other_moe,pop_white,pop_white_moe
+2013,"Montgomery County, MD",05000US24031,32585,4032,144755,2305,173059,3187,157,182,185950,0,1388,528,3707,1491,475076,1399
+2014,"Montgomery County, MD",05000US24031,30577,4291,151467,2544,178815,2792,522,162,192877,0,1431,680,3245,1407,471513,1306
+2015,"Montgomery County, MD",05000US24031,31807,3653,155100,2335,182681,3110,345,257,197396,0,1150,487,6304,3120,465333,2321
+2016,"Montgomery County, MD",05000US24031,34684,4407,154004,3130,185442,3400,239,360,199402,None,1479,667,4147,1646,464466,994
