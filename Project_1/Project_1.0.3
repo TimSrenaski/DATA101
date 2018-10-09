@@ -1,0 +1,773 @@
+---
+title: "Project_1.0.2"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+
+> What did the Montgomery College student body look like in the fall of 2015?
+> How did Montgomery College students compare to Montgomery County in the fall of 2015?
+
+
+```{r}
+library(dplyr) #Load library for analysis
+```
+#
+Data for the college is available at https://data.montgomerycountymd.gov/Education/Montgomery-College-Enrollment-Data/wmr2-6hn6/data
+Demographic data is available at https://datausa.io/profile/geo/montgomery-county-md/#economy 
+For this example, downloaded the data in csv format and loaded it to my machine. If you use this, be sure to export 
+the data to your machine and updated the noted directory.
+#
+```{r}
+
+mcData <- read.csv(file="https://raw.githubusercontent.com/TimSrenaski/DATA101/master/Project_1/Montgomery_College_Enrollment_Data.csv", header=TRUE, sep=",") #<-----Update with personal directory
+countyRaceData <- read.csv(file="https://github.com/TimSrenaski/DATA101/blob/master/Project_1/datausa_race.csv", header=TRUE, sep=",") #<-----Update with personal directory
+countyOccData <- read.csv(file="C:/Users/timsr/OneDrive/Documents/R/DATA_101/datausa_occupations.csv", header=TRUE, sep=",") #<-----Update with personal directory
+
+```
+
+
+>What are the column names in the college data?
+
+```{r}
+
+colnames(mcData)
+
+```
+
+>Is the data clean?
+
+
+```{r}
+
+unique(mcData$Fall.Term)
+unique(mcData$Student.Type)
+unique(mcData$Student.Status)
+unique(mcData$Gender)
+unique(mcData$Ethnicity)
+unique(mcData$Race)
+unique(mcData$Attending.Germantown)
+unique(mcData$Attending.Rockville)
+unique(mcData$Attending.Takoma.Park.SS)
+unique(mcData$Attend.Day.or.Evening)
+unique(mcData$MC.Program.Description)
+unique(mcData$Age.Group)
+unique(mcData$HS.Category)
+unique(mcData$MCPS.High.School)
+unique(mcData$City.in.MD)
+unique(mcData$State)
+unique(mcData$ZIP)
+unique(mcData$County.in.MD)
+
+```
+#
+#
+![What have we noticed on general inspection?](https://raw.githubusercontent.com/TimSrenaski/DATA101/master/Project_1/inspections_1.jpg)
+
+* It looks like there is only one value present in the Fall.Term column. This will make it an excellent quantitative count to
+establish a full record count.
+* The race categories line up perfectly with the race categories in the DataUSA file.
+
+>Problems with the data:
+
+* The Ethnicity column is unlikely to be useful, the Race column gives much greater detail.
+* The No/Yes responses will need to be converted to 0/1 for counting purposes in the Attending columns.
+* The Program Descriptions will need to be grouped to make any meaningful comparision to the DataUSA file.
+* The Age.Group column is useless for analysis because of the grouping. I should try to use it to make a bar chart for visuals.
+* Blank high schools in the MCPS.High.School column likley refrence HS outside of the area.
+* There are misspellings in city name causing under representation for some communites.
+* There are also blank entries in the City in MD column.
+* There is a blank entry in the State column.
+* There are NAs as well as a few zip codes that are not five digits
+#
+#
+```{r}
+
+studentCount <- nrow(mcData) # Determine how many students are enrolled in the fall of 2015
+studentCount
+
+```
+
+```{r}
+
+x <- mcData %>%
+  group_by(Student.Status) %>%
+  summarize(Count = n_distinct(MC.Program.Description))
+  
+x <- arrange(x, desc(Count))
+x
+
+```
+
+```{r}
+unique(countyOccData$acs_occ_name) # Determine the occupation categories we should filter the MC.Program.Descriptions into
+```
+
+```{r}
+# Group all declared programs to Occupations listed in the Occupational data
+
+Managment <-(c("Management (CT)", "Hospitality Management (AA & AAS)",
+               "Health Information Management (AA & AAS)", "Hospitality Management (CT)",
+               "Diagnostic Medical Sonography (CT)", "Hospitality Management (LR)",
+               "Management (AA & AAS - All Tracks)", "Management (LR)",
+               "Printing Management (AA & AAS)", "Medical Coder/Abstractr/Biller (CT)",
+               "Printing Management (CT)"))
+Business.Financial.Operations <-(c("Business / International Business (AA)",
+                                   "Accounting (AA & AAS)", "Accounting (CT)"))
+Computer.Mathematical <-(c("Computer Gaming & Simulation (AA - All Tracks)",
+                           "Graphic Design (AA, AAS, & AFA, - All Tracks)", 
+                           "Computer Science & Technologies (AA = All Tracks)",
+                           "Cybersecurity (AAS)", "Computer Applications (CT)",
+                           "Microcomputer Technician (AA & AAS)",
+                           "Digital Media & Web Technology (AAS)",
+                           "Computer Applications (AA & AAS)",
+                           "Digital Media & Web Technology (CT)",
+                           "Microcomputer Technician (CT)", "Cybersecurity (CT)",
+                           "Information Systems Secirity",
+                           "Computer Graphics / Graphic Design (CT)",
+                           "Computer Graphics / Graphic Design (AAS)",
+                           "Network & Wireless Technologies (CT)",
+                           "Network Engineer/Administration (CT)"))
+Architecture.Engineering <-(c("Engineering Science (AA - All Tracks)",
+                              "Architectural & Construction Tech (AA & AAS)",
+                              "Interior Design (CT)",
+                              "Interior Design - PreProfessional (AAS)",
+                              "Architect. & Construct. Tech - Sustainability (LR)",
+                              "Eng Technologies (AA & AAS - Discontinued)"))
+Life.Physical.Social.Science <-(c("Science (AS - All Tracks)", "Biotechnology (AA & AAS)",
+                                  "Applied Geography (AA & AAS)", "Biotechnology (CT)",
+                                  "Technical Writing (CT)",
+                                  "Cartography & Geographic Ed / Info Sys (CT)",
+                                  "Ethnic Social Studies (LR)",
+                                  "Women's Studies (CT)", "Ethnic Studies (CT)"))
+Community.Social.Service <-(c("American Sign Language (AA & AAS)"))
+Legal <-(c("Criminal Justice (AA & AAS)", "Paralegal Studies (AA & AAS)","Paralegal Studies (CT)",
+           "Paralegal Studies - Legal Analysis (LR)"))
+Education.Training <-(c("Education / Teaching Education (AA & AAT)",
+                        "Early Childhood Education (AA & AAS)", " Early Childhood Education (CT)",
+                        "Early Childhood Education (LR)"))
+Arts.Recreation <-(c("School of Art & Design - Applicants", "Photography (AA & AAS)",
+                     "Commun & Broadcasting Tech (CT)", 
+                     "Commun & Broadcasting Tech (AA & AAS - All Tracks)",
+                     "Studio Art (AFA) - School of Art & Design", "Specialized Art Transfer (CT)",
+                     "Photography (CT)", "Music Transfer (CT)",
+                     "Graphic Design (AFA) - School of Art & Design", "Studio Art (AFA)",
+                     "Recreation Leadership (AA)"))
+Health <-(c("Health Sciences (Pre-Clinical Studies)", "Diagnostic Medical Sonography (AA & AAS)",
+            "Nursing (AA & AAS)", "Mental Health Associate (AA & AAS)", 
+            "Polysomnography Technology (CT)", "Radiologic (X-Ray) Technology (AA & AAS)",
+            "Physical Therapist Assistant (AAS)", "Surgical Technologist (AAS)", 
+            "Exercise Sci - Personal Trainer (LR)", 
+            "Exercise Sci - Personal Trainer (CT)"))
+Law.Enforcement  <-(c())
+Fire.Fighting  <-(c("Fire Sci./Preven., Emerg. Prepare. (AA, AS & AAS)", 
+                    "Fire Sci./Preven., Emergency Prepare. (CT)", "Fire Science (LR)"))
+Food.Service  <-(c())
+Cleaning.Maintenance  <-(c())
+Personal.Care.Service  <-(c())
+Sales  <-(c())
+Administrative  <-(c("Communication Studies (AA)", "American Sign Language (CT)", 
+                     "Administrative Support Tech (CT)"))
+Farming.Fishing.Forestry  <-(c())
+Construction.Extraction  <-(c("Building Trades Technology (AA & AAS)", 
+                              "Building Trades Technology (CT)", "Management of Construction (CT)",
+                              "Landscape Technology (AA & AAS)", "Building Trades Technology (LR)", 
+                              "Landscape Technology (CT)"))
+Installation.Maintenance.Repair  <-(c("Automotive Technology (AA & AAS)", 
+                                      "Automotive Technology (CT)", 
+                                      "Electromechanical Sys Eng Tech (AA & AAS - Discnt)"))
+Transportation  <-(c())
+Materal.Moving  <-(c())
+Other <-(c("General Studies (AA - All Tracks)","Arts & Sciences Transfer (AA - All Tracks)",
+           "Credit (Undeclared / Undecided)", "WIA (CE) Programs", "Arts & Sciences Transfer (CT)"))
+```
+
+>Student body details (Macro perspective)
+
+```{r}
+
+Student.Type <- select(mcData, Student.Type)
+studentTypeTable <- as.data.frame(table(Student.Type))
+
+studentType <- arrange(studentTypeTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / studentCount),digits = 3))
+studentType
+
+```
+```{r}
+
+Student.Gender <- select(mcData, Gender)
+studentGenderTable <- as.data.frame(table(Student.Gender))
+
+studentGender <- arrange(studentGenderTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / studentCount),digits = 3))
+studentGender
+
+```
+
+```{r}
+Student.Race <- select(mcData, Race)
+studentRaceTable <- as.data.frame(table(Student.Race))
+
+studentRace <- arrange(studentRaceTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / studentCount),digits = 3))
+studentRace
+
+```
+
+```{r}
+Student.Age.Group <- select(mcData, Age.Group)
+studentAgeGroupTable <- as.data.frame(table(Student.Age.Group))
+
+studentAgeGroup <- arrange(studentAgeGroupTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / studentCount),digits = 3))
+studentAgeGroup
+
+```
+```{r}
+
+Student.City <- select(mcData, City.in.MD)
+studentCityTable <- as.data.frame(table(Student.City))
+
+studentCity <- arrange(studentCityTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / studentCount),digits = 3))
+studentCity
+
+```
+```{r}
+
+Student.Program <- select(mcData, MC.Program.Description)
+studentProgramTable <- as.data.frame(table(Student.Program))
+
+studentProgram <- arrange(studentProgramTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / studentCount),digits = 3))
+studentProgram
+
+```
+#
+#
+>Student body details
+
+![Takoma Park/Silver Spring](https://raw.githubusercontent.com/TimSrenaski/DATA101/master/Project_1/TPSS.jpg)
+```{r}
+
+TP.SS <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "No")
+TP.SS.Student.Type <- select(TP.SS, Student.Type)
+TP.SS.studentTypeTable <- as.data.frame(table(TP.SS.Student.Type))
+
+TP.SS.studentType <- arrange(TP.SS.studentTypeTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.SS.studentType
+
+```
+
+```{r}
+
+TP.SS <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "No")
+TP.SS.Student.Gender <- select(TP.SS, Gender)
+TP.SS.studentGenderTable <- as.data.frame(table(TP.SS.Student.Gender))
+
+TP.SS.studentGender <- arrange(TP.SS.studentGenderTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.SS.studentGender
+
+```
+
+```{r}
+
+TP.SS <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "No")
+TP.SS.Student.Race <- select(TP.SS, Race)
+TP.SS.studentRaceTable <- as.data.frame(table(TP.SS.Student.Race))
+
+TP.SS.studentRace <- arrange(TP.SS.studentRaceTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.SS.studentRace
+
+```
+
+```{r}
+
+TP.SS <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "No")
+TP.SS.Student.Age.Group <- select(TP.SS, Age.Group)
+TP.SS.studentAgeGroupTable <- as.data.frame(table(TP.SS.Student.Age.Group))
+
+TP.SS.studentAgeGroup <- arrange(TP.SS.studentAgeGroupTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.SS.studentAgeGroup
+
+```
+
+```{r}
+
+TP.SS <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "No")
+TP.SS.Student.City <- select(TP.SS, City.in.MD)
+TP.SS.studentCityTable <- as.data.frame(table(TP.SS.Student.City))
+
+TP.SS.studentCity <- arrange(TP.SS.studentCityTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.SS.studentCity
+
+```
+
+
+```{r}
+
+TP.SS <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "No")
+TP.SS.Student.Program <- select(TP.SS, MC.Program.Description)
+TP.SS.studentProgramTable <- as.data.frame(table(TP.SS.Student.Program))
+
+TP.SS.studentProgram <- arrange(TP.SS.studentProgramTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.SS.studentProgram
+
+```
+#
+#
+>Student body details
+
+![Rockville](https://raw.githubusercontent.com/TimSrenaski/DATA101/master/Project_1/RV.jpg)
+```{r}
+
+RV <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "No")
+RV.Student.Type <- select(RV, Student.Type)
+RV.studentTypeTable <- as.data.frame(table(RV.Student.Type))
+
+RV.studentType <- arrange(RV.studentTypeTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.studentType
+
+```
+
+```{r}
+
+RV <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "No")
+RV.Student.Gender <- select(RV, Gender)
+RV.studentGenderTable <- as.data.frame(table(RV.Student.Gender))
+
+RV.studentGender <- arrange(RV.studentGenderTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.studentGender
+
+```
+
+```{r}
+
+RV <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "No")
+RV.Student.Race <- select(RV, Race)
+RV.studentRaceTable <- as.data.frame(table(RV.Student.Race))
+
+RV.studentRace <- arrange(RV.studentRaceTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.studentRace
+
+```
+
+```{r}
+
+RV <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "No")
+RV.Student.Age.Group <- select(RV, Age.Group)
+RV.studentAgeGroupTable <- as.data.frame(table(RV.Student.Age.Group))
+
+RV.studentAgeGroup <- arrange(RV.studentAgeGroupTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.studentAgeGroup
+
+```
+
+```{r}
+
+RV <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "No")
+RV.Student.City <- select(RV, City.in.MD)
+RV.studentCityTable <- as.data.frame(table(RV.Student.City))
+
+RV.studentCity <- arrange(RV.studentCityTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.studentCity
+
+```
+
+
+```{r}
+
+RV <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "No")
+RV.Student.Program <- select(RV, MC.Program.Description)
+RV.studentProgramTable <- as.data.frame(table(RV.Student.Program))
+
+RV.studentProgram <- arrange(RV.studentProgramTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.studentProgram
+
+```
+#
+#
+>Student body details
+
+![Germantown](https://raw.githubusercontent.com/TimSrenaski/DATA101/master/Project_1/GT.jpg)
+```{r}
+
+GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "No", Attending.Germantown == "Yes")
+GT.Student.Type <- select(GT, Student.Type)
+GT.studentTypeTable <- as.data.frame(table(GT.Student.Type))
+
+GT.studentType <- arrange(GT.studentTypeTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+GT.studentType
+
+```
+
+```{r}
+
+GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "No", Attending.Germantown == "Yes")
+GT.Student.Gender <- select(GT, Gender)
+GT.studentGenderTable <- as.data.frame(table(GT.Student.Gender))
+
+GT.studentGender <- arrange(GT.studentGenderTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+GT.studentGender
+
+```
+
+```{r}
+
+GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "No", Attending.Germantown == "Yes")
+GT.Student.Race <- select(GT, Race)
+GT.studentRaceTable <- as.data.frame(table(GT.Student.Race))
+
+GT.studentRace <- arrange(GT.studentRaceTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+GT.studentRace
+
+```
+
+```{r}
+
+GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "No", Attending.Germantown == "Yes")
+GT.Student.Age.Group <- select(GT, Age.Group)
+GT.studentAgeGroupTable <- as.data.frame(table(GT.Student.Age.Group))
+
+GT.studentAgeGroup <- arrange(GT.studentAgeGroupTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+GT.studentAgeGroup
+
+```
+
+```{r}
+
+GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "No", Attending.Germantown == "Yes")
+GT.Student.City <- select(GT, City.in.MD)
+GT.studentCityTable <- as.data.frame(table(GT.Student.City))
+
+GT.studentCity <- arrange(GT.studentCityTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+GT.studentCity
+
+```
+
+```{r}
+
+GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "No", Attending.Germantown == "Yes")
+GT.Student.Program <- select(GT, MC.Program.Description)
+GT.studentProgramTable <- as.data.frame(table(GT.Student.Program))
+
+GT.studentProgram <- arrange(GT.studentProgramTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+GT.studentProgram
+
+```
+#
+#
+>Multiple Campus
+
+
+>Reviewing the data file we see that some students were marked as "yes" for multiple campuses
+
+![That could make for some really long drives!](https://raw.githubusercontent.com/TimSrenaski/DATA101/master/Project_1/multiple_campus.jpg)
+
+>Student body details (Takoma Park/Rockville)
+
+```{r}
+
+TP.RV <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "Yes", Attending.Germantown == "No")
+TP.RV.Student.Type <- select(TP.RV, Student.Type)
+TP.RV.studentTypeTable <- as.data.frame(table(TP.RV.Student.Type))
+
+TP.RV.studentType <- arrange(TP.RV.studentTypeTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.RV.studentType
+
+```
+
+```{r}
+
+TP.RV <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "Yes", Attending.Germantown == "No")
+TP.RV.Student.Gender <- select(TP.RV, Gender)
+TP.RV.studentGenderTable <- as.data.frame(table(TP.RV.Student.Gender))
+
+TP.RV.studentGender <- arrange(TP.RV.studentGenderTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.RV.studentGender
+
+```
+
+```{r}
+
+TP.RV <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "Yes", Attending.Germantown == "No")
+TP.RV.Student.Race <- select(TP.RV, Race)
+TP.RV.studentRaceTable <- as.data.frame(table(TP.RV.Student.Race))
+
+TP.RV.studentRace <- arrange(TP.RV.studentRaceTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.RV.studentRace
+
+```
+
+```{r}
+
+TP.RV <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "Yes", Attending.Germantown == "No")
+TP.RV.Student.Age.Group <- select(TP.RV, Age.Group)
+TP.RV.studentAgeGroupTable <- as.data.frame(table(TP.RV.Student.Age.Group))
+
+TP.RV.studentAgeGroup <- arrange(TP.RV.studentAgeGroupTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.RV.studentAgeGroup
+
+```
+
+```{r}
+
+TP.RV <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "Yes", Attending.Germantown == "No")
+TP.RV.Student.City <- select(TP.RV, City.in.MD)
+TP.RV.studentCityTable <- as.data.frame(table(TP.RV.Student.City))
+
+TP.RV.studentCity <- arrange(TP.RV.studentCityTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.RV.studentCity
+
+```
+
+
+```{r}
+
+TP.RV <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "Yes", Attending.Germantown == "No")
+TP.RV.Student.Program <- select(TP.RV, MC.Program.Description)
+TP.RV.studentProgramTable <- as.data.frame(table(TP.RV.Student.Program))
+
+TP.RV.studentProgram <- arrange(TP.RV.studentProgramTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.RV.studentProgram
+
+```
+#
+#
+>Student body details (Rockville/Germantown)
+
+```{r}
+
+RV.GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "Yes")
+RV.GT.Student.Type <- select(RV.GT, Student.Type)
+RV.GT.studentTypeTable <- as.data.frame(table(RV.GT.Student.Type))
+
+RV.GT.studentType <- arrange(RV.GT.studentTypeTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.GT.studentType
+
+```
+
+```{r}
+
+RV.GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "Yes")
+RV.GT.Student.Gender <- select(RV.GT, Gender)
+RV.GT.studentGenderTable <- as.data.frame(table(RV.GT.Student.Gender))
+
+RV.GT.studentGender <- arrange(RV.GT.studentGenderTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.GT.studentGender
+
+```
+
+```{r}
+
+RV.GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "Yes")
+RV.GT.Student.Race <- select(RV.GT, Race)
+RV.GT.studentRaceTable <- as.data.frame(table(RV.GT.Student.Race))
+
+RV.GT.studentRace <- arrange(RV.GT.studentRaceTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.GT.studentRace
+
+```
+
+```{r}
+
+RV.GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "Yes")
+RV.GT.Student.Age.Group <- select(RV.GT, Age.Group)
+RV.GT.studentAgeGroupTable <- as.data.frame(table(RV.GT.Student.Age.Group))
+
+RV.GT.studentAgeGroup <- arrange(RV.GT.studentAgeGroupTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.GT.studentAgeGroup
+
+```
+
+```{r}
+
+RV.GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "Yes")
+RV.GT.Student.City <- select(RV.GT, City.in.MD)
+RV.GT.studentCityTable <- as.data.frame(table(RV.GT.Student.City))
+
+RV.GT.studentCity <- arrange(RV.GT.studentCityTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.GT.studentCity
+
+```
+
+```{r}
+
+RV.GT <- filter(mcData, Attending.Takoma.Park.SS =="No", Attending.Rockville == "Yes", Attending.Germantown == "Yes")
+RV.GT.Student.Program <- select(RV.GT, MC.Program.Description)
+RV.GT.studentProgramTable <- as.data.frame(table(RV.GT.Student.Program))
+
+RV.GT.studentProgram <- arrange(RV.GT.studentProgramTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+RV.GT.studentProgram
+
+```
+#
+#
+>Student body details (Takoma Park/Germantown)
+
+```{r}
+
+TP.GT <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "Yes")
+TP.GT.Student.Type <- select(TP.GT, Student.Type)
+TP.GT.studentTypeTable <- as.data.frame(table(TP.GT.Student.Type))
+
+TP.GT.studentType <- arrange(TP.GT.studentTypeTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.GT.studentType
+
+```
+
+```{r}
+
+TP.GT <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "Yes")
+TP.GT.Student.Gender <- select(TP.GT, Gender)
+TP.GT.studentGenderTable <- as.data.frame(table(TP.GT.Student.Gender))
+
+TP.GT.studentGender <- arrange(TP.GT.studentGenderTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.GT.studentGender
+
+```
+
+```{r}
+
+TP.GT <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "Yes")
+TP.GT.Student.Race <- select(TP.GT, Race)
+TP.GT.studentRaceTable <- as.data.frame(table(TP.GT.Student.Race))
+
+TP.GT.studentRace <- arrange(TP.GT.studentRaceTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.GT.studentRace
+
+```
+
+```{r}
+
+TP.GT <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "Yes")
+TP.GT.Student.Age.Group <- select(TP.GT, Age.Group)
+TP.GT.studentAgeGroupTable <- as.data.frame(table(TP.GT.Student.Age.Group))
+
+TP.GT.studentAgeGroup <- arrange(TP.GT.studentAgeGroupTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.GT.studentAgeGroup
+
+```
+
+```{r}
+
+TP.GT <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "Yes")
+TP.GT.Student.City <- select(TP.GT, City.in.MD)
+TP.GT.studentCityTable <- as.data.frame(table(TP.GT.Student.City))
+
+TP.GT.studentCity <- arrange(TP.GT.studentCityTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.GT.studentCity
+
+```
+
+```{r}
+
+TP.GT <- filter(mcData, Attending.Takoma.Park.SS =="Yes", Attending.Rockville == "No", Attending.Germantown == "Yes")
+TP.GT.Student.Program <- select(TP.GT, MC.Program.Description)
+TP.GT.studentProgramTable <- as.data.frame(table(TP.GT.Student.Program))
+
+TP.GT.studentProgram <- arrange(TP.GT.studentProgramTable, desc(Freq)) %>%
+  mutate(Share.Enrollment = round((Freq / sum(Freq)),digits = 3))
+TP.GT.studentProgram
+
+```
+#
+#
+#
+#
+#
+#
+#
+
+```{r}
+y = subset(GT.studentType)
+
+```
+
+```{r}
+statusSummaryList <-list(GT.studentType[[1,"GT.Student.Type"]], RV.studentType[[1,"RV.Student.Type"]],
+                         TP.SS.studentType[[1,"TP.SS.Student.Type"]], RV.GT.studentType[[1,"RV.GT.Student.Type"]],
+                         TP.RV.studentType[[1,"TP.RV.Student.Type"]], TP.GT.studentType[[1,"TP.GT.Student.Type"]])
+genderMaleSummaryList <-list(GT.studentGender[[1,"Share.Enrollment"]], RV.studentGender[[1,"Share.Enrollment"]],
+                         TP.SS.studentGender[[1,"Share.Enrollment"]], RV.GT.studentGender[[1,"Share.Enrollment"]],
+                         TP.RV.studentGender[[1,"Share.Enrollment"]], TP.GT.studentGender[[1,"Share.Enrollment"]])
+
+#statusSummaryList
+mcSummary <- data.frame("Campus" = c("Germantown","Rockville", "Takoma Park/Silver Spring", "Germantown/Rockville",
+                                     "Rockville/TPSS", "Germantown/TPSS"), 
+                        "Most Common Status" = statusSummaryList,
+                        "Share of Male Students" = genderMaleSummaryList,
+                        "Share of Female Students" = "",
+                        "Most Common Program" = "",
+                        "Share Who Identify as Black" = "",
+                        "Share who Identify as White" = "",
+                        "Share who Identify as Hispanic" = "",
+                        "Share who Identify as Asian" = "",
+                        "Most common City of Residence" = "", 
+                        stringsAsFactors = FALSE)
+
+mcSummary
+
+
+```
+
+```{r}
+
+
+mcSummary <- data.frame("Campus" = c("Germantown","Rockville", "Takoma Park/Silver Spring", "Germantown/Rockville",
+                                     "Rockville/TPSS", "Germantown/TPSS"), 
+                        "Most Common Status" = list(GT.studentType[[1,"GT.Student.Type"]], RV.studentType[[1,"RV.Student.Type"]],
+                         TP.SS.studentType[[1,"TP.SS.Student.Type"]], RV.GT.studentType[[1,"RV.GT.Student.Type"]],
+                         TP.RV.studentType[[1,"TP.RV.Student.Type"]], TP.GT.studentType[[1,"TP.GT.Student.Type"]]),
+                        "Share of Male Students" = genderMaleSummaryList,
+                        "Share of Female Students" = "",
+                        "Most Common Program" = "",
+                        "Share Who Identify as Black" = "",
+                        "Share who Identify as White" = "",
+                        "Share who Identify as Hispanic" = "",
+                        "Share who Identify as Asian" = "",
+                        "Most common City of Residence" = "", 
+                        stringsAsFactors = FALSE)
+
+mcSummary
+
+```
