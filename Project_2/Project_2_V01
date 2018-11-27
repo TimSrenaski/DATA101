@@ -1,0 +1,302 @@
+---
+title: "Project_2_version_01"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+A prominent topic of dicussion for my news feeds and clients is the impact of education on the workforce. You have probably heard about a renewed focus on blue collar jobs in this country, onces focused on manufacturing and resource havesting. This all comes as I and those I discuss these topics with have a perception that the working population in this economy was on the cusp of a fundamental shift toward a knowledge based economy. It got me thinking that my perception was skewed by my surroundings and influencers and I wanted to see if the data supported my feelings or if this policy shift was in the best interest of the infurstructure we have been putting in place. To take this look, I turned to the Census Bereau's annual American Community Survey to collect information about education attainment up through 2017. I also wannted to compare this to what we know about population distribution, age, and race details. For this second data source I again turned to the Census Bureau, this time using thier annual population estimate data.
+
+
+# Question to answer:
+
+
+#* Distribution
+#  + What states have the largest and lowest number of peole over the age of 25 with a Bachelor's degree?
+#  + What proportion of the population holds a Bachelor's degree by state?
+#  + What is the most prominent degree discipline by state?
+#  + What is the most prominent degree discipline by region?
+  
+#* Age
+#  + What is the most favored degree by age grouping?
+#  + Has a degree discipline gained or lost popularity over time?
+  
+#* Gender
+#  + What is the most favored degree by gender?
+#  + Has a degree discipline gained or lost popularity over time within each gender?
+  
+#* Brain Drain
+#  + Are enough people entering the workforce to replace near term retiries?
+  
+
+```{r}
+# Libraries
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+# Data
+rawEduData <-read.csv(file="https://raw.githubusercontent.com/TimSrenaski/DATA101/master/Project_2/US_Census%20Bureau_2017_American_Community_Survey_Bachelors_Degree_Attainment.csv", header=TRUE, sep=",")
+rawPopData <-read.csv(file="https://raw.githubusercontent.com/TimSrenaski/DATA101/master/Project_2/US_Census_Bureau_2017_Population_Est.csv", header=TRUE, sep=",")
+```
+
+```{r}
+head(rawEduData)
+```
+
+```{r}
+head(rawPopData)
+```
+
+
+###### Temp
+```{r}
+totalBach1 = 70765915
+#totalPop1 = 225451138
+
+firstcol <- which(colnames(rawPopData)=="wac_sex0_age25to29")
+lastcol <- which(colnames(rawPopData)=="nac_sex0_age85plus")
+
+totalPop <- rawPopData[c(31),c(firstcol:lastcol)]
+index <- sapply(totalPop, is.factor)
+totalPop[index] <- lapply(totalPop[index], function(x) as.numeric(as.character(x)))
+totalPop <- rowSums(totalPop)
+
+totalBach <- rawEduData[2,4]
+totalBach <- as.numeric(as.character(totalBach))
+
+paste0("Total number of people in the US in 2017 with a Bachelor's degree or higher: ", totalBach1)
+shareHigherEd = totalBach/totalPop
+shareHigherEd
+
+```
+A quick pull reveals that about 71M people in this country held a Bachelor's degree or higher in 2017. Next, I filtered the 2017 population by those who were 25 or older at that point. I did this minimize the potential to underestimate because most people finish thier undergraduate work in thier early 20s. That left me with an adjusted population count of just over 225M people. That left me with the information that just 31% of the population likely to have finished at least a four year program in higher education have done so. That is lower than my expectation but informative.
+
+#What states have the largest and lowest number of peole over the age of 25 with a Bachelor's degree?
+
+```{r}
+z <- rawEduData[-c(1,2,54), c("GEO.display.label", "HC01_EST_VC01")]
+a <- transform(z, Number_of_People_With_Degrees = as.numeric(as.character(HC01_EST_VC01)))
+
+
+#transform(z, HC01_EST_VC01 = as.numeric(HC01_EST_VC01))
+a <-a[order(-a$Number_of_People_With_Degrees),]
+a <-a[,-c(2)]
+a
+
+```
+In terms of raw numbers, California has the highest overall number of people with at least a Bachelor's degree  earned. Texas, New York, and Florida are all clustered together with around 4 to 5 million people. Whyoming has the least with about 110K. Alaska, the Dakotas, and Vermont near by, all with fewer than 170K people each with an advanced education. For reference, Maryland has about 1.7M people with at least a Bachelors, ranking 15th overall, while our neighbors in Virgina report over 2.2M (8th) and the District of Columbia (42nd) just under 300K.
+
+
+```{r}
+#Basic barplot
+a$GEO.display.label <- factor(a$GEO.display.label, levels = a$GEO.display.label[order(a$Number_of_People_With_Degrees)])
+p<-ggplot(a, aes(x=GEO.display.label, y=Number_of_People_With_Degrees)) +
+  geom_bar(stat="identity")
+p1 <- p+labs(y = "Number of Advanced Degrees", x = "State")+coord_flip()
+print(p1 + ggtitle("Comparison of Population with Bachelor's Degree by State"))
+```
+But just looking at the number of people with a degree doesn't tell us much. Population by state swings wildly. This lead me to the question about the influence of a state's population on the number of degree holders within it's boarders.
+
+
+#How does the number of advanced degrees compare to the population aged 25 and older?
+
+```{r}
+
+uniq <- unique(unlist(rawPopData$GEO.display.label))
+
+uniqLast <- length(rawPopData$GEO.display.label)-match(unique(rawPopData$GEO.display.label), rev(rawPopData$GEO.display.label))+1
+
+for (i in 1:length(uniq)){
+  newPopStatesDF <- data.frame(State = uniq)
+}
+
+
+for (i in 1:length(uniqLast)){
+  newPopDF <- data.frame(Pop = rawPopData[c(uniqLast), c(firstcol:lastcol)])
+}
+
+index <- sapply(newPopDF, is.factor)
+newPopDF[index] <- lapply(newPopDF[index], function(x) as.numeric(as.character(x)))
+newPopDF$Sum <- rowSums(newPopDF)
+
+newdf <- data.frame(newPopStatesDF, newPopDF$Sum)
+
+#head(newPopStatesDF)
+#head(newPopDF)
+#uniq
+#uniqLast
+
+
+tempAD <- subset(rawEduData, select=c("GEO.display.label", "HC01_EST_VC01"))
+colnames(tempAD)[colnames(tempAD)=="GEO.display.label"]<-"State"
+colnames(tempAD)[colnames(tempAD)=="HC01_EST_VC01"]<-"Population_With_Degree"
+tempAD <- tempAD[-c(54),]
+
+index <- sapply(tempAD, is.factor)
+tempAD[index] <- lapply(tempAD[index], function(x) as.numeric(as.character(x)))
+newdf$Population_With_Degree <- tempAD$Population_With_Degree
+
+
+tempAD
+
+
+newdf$Propotion <- newdf$Population_With_Degree/newdf$newPopDF.Sum
+newdf
+
+
+```
+
+```{r}
+#Clustered barplot
+newdf2 <- newdf[,-c(4)]
+newdf2 <- newdf2[-c(1,2,54,55),]
+newdf2 <- newdf2[order(-newdf2$newPopDF.Sum),]
+newdf2
+
+newdf3 <- newdf2 %>%
+  gather(CountName, Count, -State)
+newdf3
+
+p2 <- ggplot(newdf3, aes(x = State, fill = CountName, y = Count)) +
+  geom_col(position = "dodge") +
+  coord_flip()
+print(p2 + ggtitle("Comparison of Population with Bachelor's and 25+ Population by State"))
+
+
+```
+```{r}
+p5 <- ggplot(newdf2, aes(x=Population_With_Degree, y=newPopDF.Sum)) +
+  geom_point(shape=19) +
+  geom_smooth(method=lm)
+
+lm_eqn <- function(newdf2){
+  m <- lm(y ~ x, newdf2);
+  eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2,
+                   list(a = format(coef(m)[1], digits = 2),
+                        b = format(coef(m)[2], digits = 2),
+                        r2 = format(summary(m)$r.squared, digits = 3)))
+  as.character(as.expression(eq));
+}
+
+#p1
+
+#r1 <- p5 + geom_text(x = 2500000, y = 20000000, label = lm_eqn(newdf2), parse = TRUE)
+
+print(p5 + ggtitle("Linear Regression (95% CI) of Population vs. Population with Degree"))
+
+
+```
+
+
+
+```{r}
+newdf4 <- newdf[-c(1),-c(2,3)]
+newdf4 <- newdf4[order(-newdf4$Propotion),]
+newdf4$State <- factor(newdf4$State, levels = newdf4$State[order(newdf4$Propotion)])
+newdf4
+
+
+
+r<-ggplot(newdf4, aes(x=State, 
+                      y=Propotion,
+                      fill = factor(ifelse(State=="United States", F, T)))) +
+  geom_bar(stat="identity") +
+  scale_fill_manual(name = "area", values=c("red", "gray50"))
+r+labs(y = "Proportion of Advanced Degrees to the Population", x = "State")+coord_flip() +
+  theme(legend.position = "None") + ggtitle("Proportion of Degrees Per Resident")
+```
+
+# What is the most prominent degree discipline by state?
+
+```{r}
+newdf5 <- select(rawEduData, c(
+                 HC01_EST_VC01,
+                 HC01_EST_VC03,
+                 HC01_EST_VC04,
+                 HC01_EST_VC05,
+                 HC01_EST_VC06,
+                 HC01_EST_VC07))
+
+index <- sapply(newdf5, is.factor)
+newdf5[index] <- lapply(newdf5[index], function(x) as.numeric(as.character(x)))
+#newdf5$Sum <- rowSums(newPopDF)
+newdf5 <- cbind("State" = rawEduData$GEO.display.label, newdf5)
+
+colnames(newdf5)[colnames(newdf5)=="HC01_EST_VC01"] <- "Total_Degrees"
+colnames(newdf5)[colnames(newdf5)=="HC01_EST_VC03"] <- "Science_and_Engineering"
+colnames(newdf5)[colnames(newdf5)=="HC01_EST_VC04"] <- "Science_and_Engineering_Related"
+colnames(newdf5)[colnames(newdf5)=="HC01_EST_VC05"] <- "Business"
+colnames(newdf5)[colnames(newdf5)=="HC01_EST_VC06"] <- "Education"
+colnames(newdf5)[colnames(newdf5)=="HC01_EST_VC07"] <- "Arts_Humanities_Other"
+
+
+newdf5$Proportion_Sci_Eng <- newdf5$Science_and_Engineering/newdf5$Total_Degrees
+newdf5$Proportion_Sci_Eng_Rel <- newdf5$Science_and_Engineering_Related/newdf5$Total_Degrees
+newdf5$Proportion_Bus <- newdf5$Business/newdf5$Total_Degrees
+newdf5$Proportion_Edu <- newdf5$Education/newdf5$Total_Degrees
+newdf5$Proportion_Hum <- newdf5$Arts_Humanities_Other/newdf5$Total_Degrees
+
+newdf5 <- newdf5[-c(1,54),]
+newdf5
+
+```
+
+```{r}
+newdf6 <- newdf5 %>%
+  gather(Deg_Type, Proportion, -State, -Total_Degrees, -Science_and_Engineering, -Science_and_Engineering_Related, -Business, -Education, -Arts_Humanities_Other)
+newdf6 <- newdf6[,-c(2:7)]
+newdf6
+```
+```{r}
+p6 <- ggplot() + geom_bar(aes(y = Proportion, x = State, fill = Deg_Type), data = newdf6,
+                           stat="identity") + coord_flip()
+p6
+```
+
+```{r}
+newdf7 <- select(rawEduData, c(
+                 HC01_EST_VC01,
+                 HC01_EST_VC10,
+                 HC01_EST_VC16,
+                 HC01_EST_VC22))
+
+index <- sapply(newdf7, is.factor)
+newdf7[index] <- lapply(newdf7[index], function(x) as.numeric(as.character(x)))
+#newdf5$Sum <- rowSums(newPopDF)
+newdf7 <- cbind("State" = rawEduData$GEO.display.label, newdf7)
+
+colnames(newdf7)[colnames(newdf7)=="HC01_EST_VC01"] <- "Total_Degrees"
+colnames(newdf7)[colnames(newdf7)=="HC01_EST_VC10"] <- "Age_25_to_39"
+colnames(newdf7)[colnames(newdf7)=="HC01_EST_VC16"] <- "Age_40_to_64"
+colnames(newdf7)[colnames(newdf7)=="HC01_EST_VC22"] <- "Age_65_and_Older"
+
+
+newdf7$Proportion_25_to_39 <- newdf7$Age_25_to_39/newdf7$Total_Degrees
+newdf7$Proportion_40_to_64 <- newdf7$Age_40_to_64/newdf7$Total_Degrees
+newdf7$Proportion_65_and_Older <- newdf7$Age_65_and_Older/newdf7$Total_Degrees
+
+
+newdf7 <- newdf7[-c(1,54),]
+newdf7
+
+```
+
+
+```{r}
+newdf8 <- newdf7 %>%
+  gather(Age_Range, Proportion, -State, -Total_Degrees, -Age_25_to_39, -Age_40_to_64, -Age_65_and_Older)
+newdf8 <- newdf8[,-c(2:5)]
+newdf8
+```
+
+```{r}
+
+p8 <- ggplot() + geom_bar(aes(y = Proportion, x = State, fill = Age_Range), data = newdf8,
+                           stat="identity") + coord_flip()
+p8
+```
+
