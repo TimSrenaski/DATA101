@@ -1,0 +1,1126 @@
+---
+title: "Project 3"
+author: "Tim S."
+date: "12/16/18"
+output: html_notebook
+---
+
+
+```{r}
+# Data
+rawEduData <-read.csv(file="https://raw.githubusercontent.com/TimSrenaski/DATA101/master/Project_2/US_Census%20Bureau_2017_American_Community_Survey_Bachelors_Degree_Attainment.csv", header=TRUE, sep=",", stringsAsFactors = FALSE)
+rawPopData <-read.csv(file="https://raw.githubusercontent.com/TimSrenaski/DATA101/master/Project_2/US_Census_Bureau_2017_Population_Est.csv", header=TRUE, sep=",", stringsAsFactors = FALSE)
+```
+
+```{r, results="hide", message = FALSE, warning=FALSE}
+# Libraries
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(cowplot)
+```
+
+```{r}
+dim(rawEduData)
+head(rawEduData)
+str(rawEduData)
+```
+
+```{r}
+dim(rawPopData)
+head(rawPopData)
+str(rawPopData)
+```
+
+# One big problem with both datasets is that the numeric values are all Factors. We need them to be integers to do any analysis with them. I also don't need all
+# of the columns and would benefit from cutting them down some for the analysis.
+
+```{r}
+#Education data cleaning
+progEduData <- rawEduData[-c(1,2,54), c("GEO.display.label", 
+                                        "HC01_EST_VC01",
+                                        "HC03_EST_VC01",
+                                        "HC05_EST_VC01",
+                                        "HC01_EST_VC03",
+                                        "HC03_EST_VC03",
+                                        "HC05_EST_VC03",
+                                        "HC01_EST_VC04",
+                                        "HC03_EST_VC04",
+                                        "HC05_EST_VC04",
+                                        "HC01_EST_VC05",
+                                        "HC03_EST_VC05",
+                                        "HC05_EST_VC05",
+                                        "HC01_EST_VC06",
+                                        "HC03_EST_VC06",
+                                        "HC05_EST_VC06",
+                                        "HC01_EST_VC07",
+                                        "HC03_EST_VC07",
+                                        "HC05_EST_VC07",
+                                        "HC01_EST_VC10",
+                                        "HC01_EST_VC16",
+                                        "HC01_EST_VC22")]
+
+progEduData$Total_Deg <- as.numeric(as.character(progEduData$HC01_EST_VC01))
+progEduData$Male_Total_Deg <- as.numeric(as.character(progEduData$HC03_EST_VC01))
+progEduData$Female_Total_Deg <- as.numeric(as.character(progEduData$HC05_EST_VC01))
+progEduData$Sci_Eng_Deg <- as.numeric(as.character(progEduData$HC01_EST_VC03))
+progEduData$Male_Sci_Eng_Deg <- as.numeric(as.character(progEduData$HC03_EST_VC03))
+progEduData$Female_Sci_Eng_Deg <- as.numeric(as.character(progEduData$HC05_EST_VC03))
+progEduData$Sci_Eng_Rel_Deg <- as.numeric(as.character(progEduData$HC01_EST_VC04))
+progEduData$Male_Sci_Eng_Rel_Deg <- as.numeric(as.character(progEduData$HC03_EST_VC04))
+progEduData$Female_Sci_Eng_Rel_Deg <- as.numeric(as.character(progEduData$HC05_EST_VC04))
+progEduData$Business_Deg <- as.numeric(as.character(progEduData$HC01_EST_VC05))
+progEduData$Male_Business_Deg <- as.numeric(as.character(progEduData$HC03_EST_VC05))
+progEduData$Female_Business_Deg <- as.numeric(as.character(progEduData$HC05_EST_VC05))
+progEduData$Education_Deg <- as.numeric(as.character(progEduData$HC01_EST_VC06))
+progEduData$Male_Education_Deg <- as.numeric(as.character(progEduData$HC03_EST_VC06))
+progEduData$Female_Education_Deg <- as.numeric(as.character(progEduData$HC05_EST_VC06))
+progEduData$AHO_Deg <- as.numeric(as.character(progEduData$HC01_EST_VC07))
+progEduData$Male_AHO_Deg <- as.numeric(as.character(progEduData$HC03_EST_VC07))
+progEduData$Female_AHO_Deg <- as.numeric(as.character(progEduData$HC05_EST_VC07))
+progEduData$Total_25_39 <- as.numeric(as.character(progEduData$HC01_EST_VC10))
+progEduData$Total_40_64 <- as.numeric(as.character(progEduData$HC01_EST_VC16))
+progEduData$Total_65_Over <- as.numeric(as.character(progEduData$HC01_EST_VC22))
+
+
+cleanEduData <- data.frame(State = progEduData$GEO.display.label,
+                           Total_Deg = progEduData$Total_Deg,
+                           Total_25_39 = progEduData$Total_25_39,
+                           Total_40_64 = progEduData$Total_40_64,
+                           Total_65_Over = progEduData$Total_65_Over,
+                           Male_Total_Deg = progEduData$Male_Total_Deg,
+                           Female_Total_Deg = progEduData$Female_Total_Deg,
+                           Sci_Eng_Deg = progEduData$Sci_Eng_Deg,
+                           Male_Sci_Eng_Deg = progEduData$Male_Sci_Eng_Deg,
+                           Female_Sci_Eng_Deg = progEduData$Female_Sci_Eng_Deg,
+                           Sci_Eng_Rel_Deg = progEduData$Sci_Eng_Rel_Deg,
+                           Male_Sci_Eng_Rel_Deg = progEduData$Male_Sci_Eng_Rel_Deg,
+                           Female_Sci_Eng_Rel_Deg = progEduData$Female_Sci_Eng_Rel_Deg,
+                           Business_Deg = progEduData$Business_Deg,
+                           Male_Business_Deg = progEduData$Male_Business_Deg,
+                           Female_Business_Deg = progEduData$Female_Business_Deg,
+                           Education_Deg = progEduData$Education_Deg,
+                           Male_Education_Deg = progEduData$Male_Education_Deg,
+                           Female_Education_Deg = progEduData$Female_Education_Deg,
+                           AHO_Deg = progEduData$AHO_Deg,
+                           Male_AHO_Deg = progEduData$Male_AHO_Deg,
+                           Female_AHO_Deg = progEduData$Female_AHO_Deg)
+head(cleanEduData)
+
+
+```
+
+
+The data was collected in 2017. We've read about the surge in higher education as a result of the financial downturn in 2008. This suggests to me that the higher education surge should be evident 
+in the data and that there will be a lot more adults with a degree under the age of 40 than any other age grouping. 
+
+## Hypothesis 1
+There are significantly more degrees held by those 25 to 39 than there are by those 40 to 64.
+
+```{r}
+#Select the data for Hypothesis 1
+
+hyp1 <- data.frame(cleanEduData$State, cleanEduData$Total_Deg, cleanEduData$Total_25_39, cleanEduData$Total_40_64, cleanEduData$Total_65_Over)
+hyp1
+
+
+```
+```{r}
+totalDeg <- sum(hyp1$cleanEduData.Total_Deg)
+Deg_25_39 <- sum(hyp1$cleanEduData.Total_25_39)
+Deg_40_64 <- sum(hyp1$cleanEduData.Total_40_64)
+Deg_65_plus <- sum(hyp1$cleanEduData.Total_65_Over)
+
+natTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(Deg_25_39, Deg_40_64, Deg_65_plus), stringsAsFactors = FALSE)
+natTotal
+p1 <- ggplot(natTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Number of Degrees Held in Total by Age Group") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none")
+p1
+
+```
+
+```{r}
+# Find the location of each state
+ALLoc <- which(grepl("Alabama", hyp1$cleanEduData.State))
+AKLoc <- which(grepl("Alaska", hyp1$cleanEduData.State))
+AZLoc <- which(grepl("Arizona", hyp1$cleanEduData.State))
+ARLoc <- which(grepl("Arkansas", hyp1$cleanEduData.State))
+CALoc <- which(grepl("California", hyp1$cleanEduData.State))
+COLoc <- which(grepl("Colorado", hyp1$cleanEduData.State))
+CNLoc <- which(grepl("Connecticut", hyp1$cleanEduData.State))
+DELoc <- which(grepl("Delaware", hyp1$cleanEduData.State))
+DCLoc <- which(grepl("District of Columbia", hyp1$cleanEduData.State))
+FLLoc <- which(grepl("Florida", hyp1$cleanEduData.State))
+GALoc <- which(grepl("Georgia", hyp1$cleanEduData.State))
+HILoc <- which(grepl("Hawaii", hyp1$cleanEduData.State))
+IDLoc <- which(grepl("Idaho", hyp1$cleanEduData.State))
+ILLoc <- which(grepl("Illinois", hyp1$cleanEduData.State))
+INLoc <- which(grepl("Indiana", hyp1$cleanEduData.State))
+IALoc <- which(grepl("Iowa", hyp1$cleanEduData.State))
+KSLoc <- which(grepl("Kansas", hyp1$cleanEduData.State))
+KYLoc <- which(grepl("Kentucky", hyp1$cleanEduData.State))
+LALoc <- which(grepl("Louisiana", hyp1$cleanEduData.State))
+MELoc <- which(grepl("Maine", hyp1$cleanEduData.State))
+MDLoc <- which(grepl("Maryland", hyp1$cleanEduData.State))
+MALoc <- which(grepl("Massachusetts", hyp1$cleanEduData.State))
+MILoc <- which(grepl("Michigan", hyp1$cleanEduData.State))
+MNLoc <- which(grepl("Minnesota", hyp1$cleanEduData.State))
+MSLoc <- which(grepl("Mississippi", hyp1$cleanEduData.State))
+MOLoc <- which(grepl("Missouri", hyp1$cleanEduData.State))
+MTLoc <- which(grepl("Montana", hyp1$cleanEduData.State))
+NELoc <- which(grepl("Nebraska", hyp1$cleanEduData.State))
+NVLoc <- which(grepl("Nevada", hyp1$cleanEduData.State))
+NHLoc <- which(grepl("New Hampshire", hyp1$cleanEduData.State))
+NJLoc <- which(grepl("New Jersey", hyp1$cleanEduData.State))
+NMLoc <- which(grepl("New Mexico", hyp1$cleanEduData.State))
+NYLoc <- which(grepl("New York", hyp1$cleanEduData.State))
+NCLoc <- which(grepl("North Carolina", hyp1$cleanEduData.State))
+NDLoc <- which(grepl("North Dakota", hyp1$cleanEduData.State))
+OHLoc <- which(grepl("Ohio", hyp1$cleanEduData.State))
+OKLoc <- which(grepl("Oklahoma", hyp1$cleanEduData.State))
+ORLoc <- which(grepl("Oregon", hyp1$cleanEduData.State))
+PALoc <- which(grepl("Pennsylvania", hyp1$cleanEduData.State))
+RILoc <- which(grepl("Rhode Island", hyp1$cleanEduData.State))
+SCLoc <- which(grepl("South Carolina", hyp1$cleanEduData.State))
+SDLoc <- which(grepl("South Dakota", hyp1$cleanEduData.State))
+TNLoc <- which(grepl("Tennessee", hyp1$cleanEduData.State))
+TXLoc <- which(grepl("Texas", hyp1$cleanEduData.State))
+UTLoc <- which(grepl("Utah", hyp1$cleanEduData.State))
+VTLoc <- which(grepl("Vermont", hyp1$cleanEduData.State))
+VALoc <- which(grepl("Virginia", hyp1$cleanEduData.State))
+WALoc <- which(grepl("Washington", hyp1$cleanEduData.State))
+WVLoc <- which(grepl("West Virginia", hyp1$cleanEduData.State))
+WILoc <- which(grepl("Wisconsin", hyp1$cleanEduData.State))
+WYLoc <- which(grepl("Wyoming", hyp1$cleanEduData.State))
+
+```
+
+
+```{r}
+# Set Dataframes for each state
+
+#Alabama
+ALDeg_25_39 <- hyp1[ALLoc, 3]
+ALDeg_40_64 <- hyp1[ALLoc, 4]
+ALDeg_65_plus <- hyp1[ALLoc, 5]
+ALTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(ALDeg_25_39, ALDeg_40_64, ALDeg_65_plus), stringsAsFactors = FALSE)
+
+#Alaska
+AKDeg_25_39 <- hyp1[AKLoc, 3]
+AKDeg_40_64 <- hyp1[AKLoc, 4]
+AKDeg_65_plus <- hyp1[AKLoc, 5]
+AKTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(AKDeg_25_39, AKDeg_40_64, AKDeg_65_plus), stringsAsFactors = FALSE)
+
+#Arizona
+AZDeg_25_39 <- hyp1[AZLoc, 3]
+AZDeg_40_64 <- hyp1[AZLoc, 4]
+AZDeg_65_plus <- hyp1[AZLoc, 5]
+AZTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(AZDeg_25_39, AZDeg_40_64, AZDeg_65_plus), stringsAsFactors = FALSE)
+
+#Arkansas
+ARDeg_25_39 <- hyp1[ARLoc, 3]
+ARDeg_40_64 <- hyp1[ARLoc, 4]
+ARDeg_65_plus <- hyp1[ARLoc, 5]
+ARTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(ARDeg_25_39, ARDeg_40_64, ARDeg_65_plus), stringsAsFactors = FALSE)
+
+#California
+CADeg_25_39 <- hyp1[CALoc, 3]
+CADeg_40_64 <- hyp1[CALoc, 4]
+CADeg_65_plus <- hyp1[CALoc, 5]
+CATotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(CADeg_25_39, CADeg_40_64, CADeg_65_plus), stringsAsFactors = FALSE)
+
+#Colorado
+CODeg_25_39 <- hyp1[COLoc, 3]
+CODeg_40_64 <- hyp1[COLoc, 4]
+CODeg_65_plus <- hyp1[COLoc, 5]
+COTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(CODeg_25_39, CODeg_40_64, CODeg_65_plus), stringsAsFactors = FALSE)
+
+#Connecticut
+CNDeg_25_39 <- hyp1[CNLoc, 3]
+CNDeg_40_64 <- hyp1[CNLoc, 4]
+CNDeg_65_plus <- hyp1[CNLoc, 5]
+CNTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(CNDeg_25_39, CNDeg_40_64, CNDeg_65_plus), stringsAsFactors = FALSE)
+
+#Delaware
+DEDeg_25_39 <- hyp1[DELoc, 3]
+DEDeg_40_64 <- hyp1[DELoc, 4]
+DEDeg_65_plus <- hyp1[DELoc, 5]
+DETotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(DEDeg_25_39, DEDeg_40_64, DEDeg_65_plus), stringsAsFactors = FALSE)
+
+#District of Columbia
+DCDeg_25_39 <- hyp1[DCLoc, 3]
+DCDeg_40_64 <- hyp1[DCLoc, 4]
+DCDeg_65_plus <- hyp1[DCLoc, 5]
+DCTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(DCDeg_25_39, DCDeg_40_64, DCDeg_65_plus), stringsAsFactors = FALSE)
+
+#Florida
+FLDeg_25_39 <- hyp1[FLLoc, 3]
+FLDeg_40_64 <- hyp1[FLLoc, 4]
+FLDeg_65_plus <- hyp1[FLLoc, 5]
+FLTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(FLDeg_25_39, FLDeg_40_64, FLDeg_65_plus), stringsAsFactors = FALSE)
+
+#Georgia
+GADeg_25_39 <- hyp1[GALoc, 3]
+GADeg_40_64 <- hyp1[GALoc, 4]
+GADeg_65_plus <- hyp1[GALoc, 5]
+GATotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(GADeg_25_39, GADeg_40_64, GADeg_65_plus), stringsAsFactors = FALSE)
+
+#Hawaii
+HIDeg_25_39 <- hyp1[HILoc, 3]
+HIDeg_40_64 <- hyp1[HILoc, 4]
+HIDeg_65_plus <- hyp1[HILoc, 5]
+HITotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(HIDeg_25_39, HIDeg_40_64, HIDeg_65_plus), stringsAsFactors = FALSE)
+
+#Idaho
+IDDeg_25_39 <- hyp1[IDLoc, 3]
+IDDeg_40_64 <- hyp1[IDLoc, 4]
+IDDeg_65_plus <- hyp1[IDLoc, 5]
+IDTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(IDDeg_25_39, IDDeg_40_64, IDDeg_65_plus), stringsAsFactors = FALSE)
+
+#Illinois
+ILDeg_25_39 <- hyp1[ILLoc, 3]
+ILDeg_40_64 <- hyp1[ILLoc, 4]
+ILDeg_65_plus <- hyp1[ILLoc, 5]
+ILTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(ILDeg_25_39, ILDeg_40_64, ILDeg_65_plus), stringsAsFactors = FALSE)
+
+#Indiana
+INDeg_25_39 <- hyp1[INLoc, 3]
+INDeg_40_64 <- hyp1[INLoc, 4]
+INDeg_65_plus <- hyp1[INLoc, 5]
+INTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(INDeg_25_39, INDeg_40_64, INDeg_65_plus), stringsAsFactors = FALSE)
+
+#Iowa
+IADeg_25_39 <- hyp1[IALoc, 3]
+IADeg_40_64 <- hyp1[IALoc, 4]
+IADeg_65_plus <- hyp1[IALoc, 5]
+IATotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(IADeg_25_39, IADeg_40_64, IADeg_65_plus), stringsAsFactors = FALSE)
+
+#Kansas
+KSDeg_25_39 <- hyp1[KSLoc, 3]
+KSDeg_40_64 <- hyp1[KSLoc, 4]
+KSDeg_65_plus <- hyp1[KSLoc, 5]
+KSTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(KSDeg_25_39, KSDeg_40_64, KSDeg_65_plus), stringsAsFactors = FALSE)
+
+#Kentucky
+KYDeg_25_39 <- hyp1[KYLoc, 3]
+KYDeg_40_64 <- hyp1[KYLoc, 4]
+KYDeg_65_plus <- hyp1[KYLoc, 5]
+KYTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(KYDeg_25_39, KYDeg_40_64, KYDeg_65_plus), stringsAsFactors = FALSE)
+
+#Louisiana
+LADeg_25_39 <- hyp1[LALoc, 3]
+LADeg_40_64 <- hyp1[LALoc, 4]
+LADeg_65_plus <- hyp1[LALoc, 5]
+LATotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(LADeg_25_39, LADeg_40_64, LADeg_65_plus), stringsAsFactors = FALSE)
+
+#Maine
+MEDeg_25_39 <- hyp1[MELoc, 3]
+MEDeg_40_64 <- hyp1[MELoc, 4]
+MEDeg_65_plus <- hyp1[MELoc, 5]
+METotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(MEDeg_25_39, MEDeg_40_64, MEDeg_65_plus), stringsAsFactors = FALSE)
+
+#Maryland
+MDDeg_25_39 <- hyp1[MDLoc, 3]
+MDDeg_40_64 <- hyp1[MDLoc, 4]
+MDDeg_65_plus <- hyp1[MDLoc, 5]
+MDTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(MDDeg_25_39, MDDeg_40_64, MDDeg_65_plus), stringsAsFactors = FALSE)
+
+#Massachusetts
+MADeg_25_39 <- hyp1[MALoc, 3]
+MADeg_40_64 <- hyp1[MALoc, 4]
+MADeg_65_plus <- hyp1[MALoc, 5]
+MATotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(MADeg_25_39, MADeg_40_64, MADeg_65_plus), stringsAsFactors = FALSE)
+
+#Michigan
+MIDeg_25_39 <- hyp1[MILoc, 3]
+MIDeg_40_64 <- hyp1[MILoc, 4]
+MIDeg_65_plus <- hyp1[MILoc, 5]
+MITotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(MIDeg_25_39, MIDeg_40_64, MIDeg_65_plus), stringsAsFactors = FALSE)
+
+#Minnesota
+MNDeg_25_39 <- hyp1[MNLoc, 3]
+MNDeg_40_64 <- hyp1[MNLoc, 4]
+MNDeg_65_plus <- hyp1[MNLoc, 5]
+MNTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(MNDeg_25_39, MNDeg_40_64, MNDeg_65_plus), stringsAsFactors = FALSE)
+
+#Mississippi
+MSDeg_25_39 <- hyp1[MSLoc, 3]
+MSDeg_40_64 <- hyp1[MSLoc, 4]
+MSDeg_65_plus <- hyp1[MSLoc, 5]
+MSTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(MSDeg_25_39, MSDeg_40_64, MSDeg_65_plus), stringsAsFactors = FALSE)
+
+#Missouri
+MODeg_25_39 <- hyp1[MOLoc, 3]
+MODeg_40_64 <- hyp1[MOLoc, 4]
+MODeg_65_plus <- hyp1[MOLoc, 5]
+MOTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(MODeg_25_39, MODeg_40_64, MODeg_65_plus), stringsAsFactors = FALSE)
+
+#Montana
+MTDeg_25_39 <- hyp1[MTLoc, 3]
+MTDeg_40_64 <- hyp1[MTLoc, 4]
+MTDeg_65_plus <- hyp1[MTLoc, 5]
+MTTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(MTDeg_25_39, MTDeg_40_64, MTDeg_65_plus), stringsAsFactors = FALSE)
+
+#Nebraska
+NEDeg_25_39 <- hyp1[NELoc, 3]
+NEDeg_40_64 <- hyp1[NELoc, 4]
+NEDeg_65_plus <- hyp1[NELoc, 5]
+NETotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(NEDeg_25_39, NEDeg_40_64, NEDeg_65_plus), stringsAsFactors = FALSE)
+
+#Nevada
+NVDeg_25_39 <- hyp1[NVLoc, 3]
+NVDeg_40_64 <- hyp1[NVLoc, 4]
+NVDeg_65_plus <- hyp1[NVLoc, 5]
+NVTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(NVDeg_25_39, NVDeg_40_64, NVDeg_65_plus), stringsAsFactors = FALSE)
+
+#New Hampshire
+NHDeg_25_39 <- hyp1[NHLoc, 3]
+NHDeg_40_64 <- hyp1[NHLoc, 4]
+NHDeg_65_plus <- hyp1[NHLoc, 5]
+NHTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(NHDeg_25_39, NHDeg_40_64, NHDeg_65_plus), stringsAsFactors = FALSE)
+
+#New Jersey
+NJDeg_25_39 <- hyp1[NJLoc, 3]
+NJDeg_40_64 <- hyp1[NJLoc, 4]
+NJDeg_65_plus <- hyp1[NJLoc, 5]
+NJTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(NJDeg_25_39, NJDeg_40_64, NJDeg_65_plus), stringsAsFactors = FALSE)
+
+#New Mexico
+NMDeg_25_39 <- hyp1[NMLoc, 3]
+NMDeg_40_64 <- hyp1[NMLoc, 4]
+NMDeg_65_plus <- hyp1[NMLoc, 5]
+NMTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(NMDeg_25_39, NMDeg_40_64, NMDeg_65_plus), stringsAsFactors = FALSE)
+
+#New York
+NYDeg_25_39 <- hyp1[NYLoc, 3]
+NYDeg_40_64 <- hyp1[NYLoc, 4]
+NYDeg_65_plus <- hyp1[NYLoc, 5]
+NYTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(NYDeg_25_39, NYDeg_40_64, NYDeg_65_plus), stringsAsFactors = FALSE)
+
+#North Carolina
+NCDeg_25_39 <- hyp1[NCLoc, 3]
+NCDeg_40_64 <- hyp1[NCLoc, 4]
+NCDeg_65_plus <- hyp1[NCLoc, 5]
+NCTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(NCDeg_25_39, NCDeg_40_64, NCDeg_65_plus), stringsAsFactors = FALSE)
+
+#North Dakota
+NDDeg_25_39 <- hyp1[NDLoc, 3]
+NDDeg_40_64 <- hyp1[NDLoc, 4]
+NDDeg_65_plus <- hyp1[NDLoc, 5]
+NDTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(NDDeg_25_39, NDDeg_40_64, NDDeg_65_plus), stringsAsFactors = FALSE)
+
+#Ohio
+OHDeg_25_39 <- hyp1[OHLoc, 3]
+OHDeg_40_64 <- hyp1[OHLoc, 4]
+OHDeg_65_plus <- hyp1[OHLoc, 5]
+OHTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(OHDeg_25_39, OHDeg_40_64, OHDeg_65_plus), stringsAsFactors = FALSE)
+
+#Oklahoma
+OKDeg_25_39 <- hyp1[OKLoc, 3]
+OKDeg_40_64 <- hyp1[OKLoc, 4]
+OKDeg_65_plus <- hyp1[OKLoc, 5]
+OKTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(OKDeg_25_39, OKDeg_40_64, OKDeg_65_plus), stringsAsFactors = FALSE)
+
+#Oregon
+ORDeg_25_39 <- hyp1[ORLoc, 3]
+ORDeg_40_64 <- hyp1[ORLoc, 4]
+ORDeg_65_plus <- hyp1[ORLoc, 5]
+ORTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(ORDeg_25_39, ORDeg_40_64, ORDeg_65_plus), stringsAsFactors = FALSE)
+
+#Pennsylvania
+PADeg_25_39 <- hyp1[PALoc, 3]
+PADeg_40_64 <- hyp1[PALoc, 4]
+PADeg_65_plus <- hyp1[PALoc, 5]
+PATotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(PADeg_25_39, PADeg_40_64, PADeg_65_plus), stringsAsFactors = FALSE)
+
+#Rhode Island
+RIDeg_25_39 <- hyp1[RILoc, 3]
+RIDeg_40_64 <- hyp1[RILoc, 4]
+RIDeg_65_plus <- hyp1[RILoc, 5]
+RITotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(RIDeg_25_39, RIDeg_40_64, RIDeg_65_plus), stringsAsFactors = FALSE)
+
+#South Carolina
+SCDeg_25_39 <- hyp1[SCLoc, 3]
+SCDeg_40_64 <- hyp1[SCLoc, 4]
+SCDeg_65_plus <- hyp1[SCLoc, 5]
+SCTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(SCDeg_25_39, SCDeg_40_64, SCDeg_65_plus), stringsAsFactors = FALSE)
+
+#South Dakota
+SDDeg_25_39 <- hyp1[SDLoc, 3]
+SDDeg_40_64 <- hyp1[SDLoc, 4]
+SDDeg_65_plus <- hyp1[SDLoc, 5]
+SDTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(SDDeg_25_39, SDDeg_40_64, SDDeg_65_plus), stringsAsFactors = FALSE)
+
+#Tennessee
+TNDeg_25_39 <- hyp1[TNLoc, 3]
+TNDeg_40_64 <- hyp1[TNLoc, 4]
+TNDeg_65_plus <- hyp1[TNLoc, 5]
+TNTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(TNDeg_25_39, TNDeg_40_64, TNDeg_65_plus), stringsAsFactors = FALSE)
+
+#Texas
+TXDeg_25_39 <- hyp1[TXLoc, 3]
+TXDeg_40_64 <- hyp1[TXLoc, 4]
+TXDeg_65_plus <- hyp1[TXLoc, 5]
+TXTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(TXDeg_25_39, TXDeg_40_64, TXDeg_65_plus), stringsAsFactors = FALSE)
+
+#Utah
+UTDeg_25_39 <- hyp1[UTLoc, 3]
+UTDeg_40_64 <- hyp1[UTLoc, 4]
+UTDeg_65_plus <- hyp1[UTLoc, 5]
+UTTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(UTDeg_25_39, UTDeg_40_64, UTDeg_65_plus), stringsAsFactors = FALSE)
+
+#Vermont
+VTDeg_25_39 <- hyp1[VTLoc, 3]
+VTDeg_40_64 <- hyp1[VTLoc, 4]
+VTDeg_65_plus <- hyp1[VTLoc, 5]
+VTTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(VTDeg_25_39, VTDeg_40_64, VTDeg_65_plus), stringsAsFactors = FALSE)
+
+#Virginia
+VADeg_25_39 <- hyp1[VALoc, 3]
+VADeg_40_64 <- hyp1[VALoc, 4]
+VADeg_65_plus <- hyp1[VALoc, 5]
+VATotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(VADeg_25_39, VADeg_40_64, VADeg_65_plus), stringsAsFactors = FALSE)
+
+#Washington
+WADeg_25_39 <- hyp1[VALoc, 3]
+WADeg_40_64 <- hyp1[VALoc, 4]
+WADeg_65_plus <- hyp1[VALoc, 5]
+WATotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(WADeg_25_39, WADeg_40_64, WADeg_65_plus), stringsAsFactors = FALSE)
+
+#West Virginia
+WVDeg_25_39 <- hyp1[WVLoc, 3]
+WVDeg_40_64 <- hyp1[WVLoc, 4]
+WVDeg_65_plus <- hyp1[WVLoc, 5]
+WVTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(WVDeg_25_39, WVDeg_40_64, WVDeg_65_plus), stringsAsFactors = FALSE)
+
+#Wisconsin
+WIDeg_25_39 <- hyp1[WILoc, 3]
+WIDeg_40_64 <- hyp1[WILoc, 4]
+WIDeg_65_plus <- hyp1[WILoc, 5]
+WITotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(WIDeg_25_39, WIDeg_40_64, WIDeg_65_plus), stringsAsFactors = FALSE)
+
+#Wyoming
+WYDeg_25_39 <- hyp1[WYLoc, 3]
+WYDeg_40_64 <- hyp1[WYLoc, 4]
+WYDeg_65_plus <- hyp1[WYLoc, 5]
+WYTotal <- data.frame("Age_Bracket" = c("25 to 39", "40 to 64", "65 and Over"), "Totals" = c(WYDeg_25_39, WYDeg_40_64, WYDeg_65_plus), stringsAsFactors = FALSE)
+
+```
+
+
+```{r}
+p2 <- ggplot(ALTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Alabama") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p3 <- ggplot(AKTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Alaska") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p4 <- ggplot(AZTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Arizona") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(axis.text = element_text(size = 8)) +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p5 <- ggplot(ARTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Arkansas") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p6 <- ggplot(CATotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("California") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p7 <- ggplot(COTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Colorado") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p8 <- ggplot(CNTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Connecticut") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p9 <- ggplot(DETotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Delaware") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p10 <- ggplot(DCTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("DC") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p11 <- ggplot(FLTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Florida") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p12 <- ggplot(GATotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Georgia") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p13 <- ggplot(HITotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Hawaii") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p14 <- ggplot(IDTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Idaho") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p15 <- ggplot(ILTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Illinois") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p16 <- ggplot(INTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Indiana") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p17 <- ggplot(IATotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Iowa") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p18 <- ggplot(KSTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Kansas") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p19 <- ggplot(KYTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Kentucky") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p20 <- ggplot(LATotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Louisina") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p21 <- ggplot(METotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Maine") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p22 <- ggplot(MDTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Maryland") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p23 <- ggplot(MATotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Massachusetts") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p24 <- ggplot(MITotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Michigan") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p25 <- ggplot(MNTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Minnesota") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p26 <- ggplot(MSTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Mississippi") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p27 <- ggplot(MOTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Missouri") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p28 <- ggplot(MTTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Montana") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p29 <- ggplot(NETotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Nebraska") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p30 <- ggplot(NVTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Nevada") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p31 <- ggplot(NHTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("N. Hampshire") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p32 <- ggplot(NJTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("N. Jersey") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p33 <- ggplot(NMTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("N. Mexico") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p34 <- ggplot(NYTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("New York") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p35 <- ggplot(NCTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("N. Carolina") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p36 <- ggplot(NDTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("N. Dakota") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p37 <- ggplot(OHTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Ohio") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p38 <- ggplot(OKTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Oklahoma") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p39 <- ggplot(ORTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Oregon") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p40 <- ggplot(PATotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Penn.") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p41 <- ggplot(RITotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Rhode Island") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p43 <- ggplot(SCTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("S. Carolina") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p44 <- ggplot(SDTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("S. Dakota") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p45 <- ggplot(TNTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Tenn.") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p46 <- ggplot(TXTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Texas") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p47 <- ggplot(UTTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Utah") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p48 <- ggplot(VTTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Vermont") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p49 <- ggplot(VATotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Virginia") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p50 <- ggplot(WATotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Washington") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p51 <- ggplot(WITotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Wisconsin") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+p52 <- ggplot(WYTotal, aes(x=Age_Bracket, y=Totals, fill = Age_Bracket)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Wyoming") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position="none") +
+  theme(text = element_text(size=6)) +
+  theme(axis.text = element_text(size = 6)) +
+  theme(axis.title = element_text(size = 8)) +
+  ylim(0, 4075000)
+
+
+plot_grid(p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, labels = "auto", align= 'h', label_size = 6)
+```
+```{r}
+plot_grid(p14, p15, p16, p17, p18, p19, p20,
+          p21, p22, p23, p24, p25, labels = "auto", align= 'h', label_size = 6)
+```
+
+```{r}
+ plot_grid(p26, p27, p28, p29, p30, p31, p32, p33, p34, p35, p36, p37,
+          labels = "auto", align= 'h', label_size = 6)
+
+```
+
+```{r}
+ plot_grid(p38,
+          p39, p40, p41, p43, p44, p45, p46, p47, p48, p49, p50, labels = "auto", align= 'h', label_size = 6)
+```
+
+```{r}
+ plot_grid(p51, p52, labels = "auto", align= 'h', label_size = 6)
+```
+
+Graphing the nation as a whole we learn that the orignal hypothesis is already disproven. Adults with at least a bachelor's degre age 40 to 65 are more numerous than adults with at least a bachelor's degree age 25 to 39. In only a few select placed, (Washingtion, Virginia, and DC ) the younger group clearly outnumbed thier older counterparts.
+
+```{r}
+NatDif <- Deg_25_39/(Deg_25_39+Deg_40_64+Deg_65_plus)
+NatDif <- c(NatDif)
+finaldf <- data.frame("National", NatDif, NatDif, stringsAsFactors = FALSE)
+names(finaldf)<-c("State", "Share_of_Deg_held_by_25_39", "National_Rate")
+
+
+ALDif <- ALDeg_25_39 /(ALDeg_25_39+ALDeg_40_64+ALDeg_65_plus)
+ALDif <- c(ALDif)
+ALdf <- data.frame("Alabama", ALDif, NatDif, stringsAsFactors = FALSE)
+names(ALdf)<-c("State", "Share_of_Deg_held_by_25_39", "National_Rate")
+
+AKDif <- AKDeg_25_39 /(AKDeg_25_39+AKDeg_40_64+AKDeg_65_plus)
+AKDif <- c(AKDif)
+AKdf <- data.frame("Alaska", AKDif, NatDif, stringsAsFactors = FALSE)
+names(AKdf)<-c("State", "Share_of_Deg_held_by_25_39", "National_Rate")
+
+AZDif <- AZDeg_25_39 /(AZDeg_25_39+AZDeg_40_64+AZDeg_65_plus)
+AZDif <- c(AZDif)
+AZdf <- data.frame("Arizona", AZDif, NatDif, stringsAsFactors = FALSE)
+names(AZdf)<-c("State", "Share_of_Deg_held_by_25_39", "National_Rate")
+
+ARDif <- ARDeg_25_39 /(ARDeg_25_39+ARDeg_40_64+ARDeg_65_plus)
+CADif <- CADeg_25_39 /(CADeg_25_39+CADeg_40_64+CADeg_65_plus)
+CODif <- CODeg_25_39 /(CODeg_25_39+CODeg_40_64+CODeg_65_plus)
+CNDif <- CNDeg_25_39 /(CNDeg_25_39+CNDeg_40_64+CNDeg_65_plus)
+DEDif <- DEDeg_25_39 /(DEDeg_25_39+DEDeg_40_64+DEDeg_65_plus)
+DCDif <- DCDeg_25_39 /(DCDeg_25_39+DCDeg_40_64+DCDeg_65_plus)
+FLDif <- FLDeg_25_39 /(FLDeg_25_39+FLDeg_40_64+FLDeg_65_plus)
+GADif <- GADeg_25_39 /(GADeg_25_39+GADeg_40_64+GADeg_65_plus)
+HIDif <- HIDeg_25_39 /(HIDeg_25_39+HIDeg_40_64+HIDeg_65_plus)
+IDDif <- IDDeg_25_39 /(IDDeg_25_39+IDDeg_40_64+IDDeg_65_plus)
+ILDif <- ILDeg_25_39 /(ILDeg_25_39+ILDeg_40_64+ILDeg_65_plus)
+INDif <- INDeg_25_39 /(INDeg_25_39+INDeg_40_64+INDeg_65_plus)
+IADif <- IADeg_25_39 /(IADeg_25_39+IADeg_40_64+IADeg_65_plus)
+KSDif <- KSDeg_25_39 /(KSDeg_25_39+KSDeg_40_64+KSDeg_65_plus)
+KYDif <- KYDeg_25_39 /(KYDeg_25_39+KYDeg_40_64+KYDeg_65_plus)
+LADif <- LADeg_25_39 /(LADeg_25_39+LADeg_40_64+LADeg_65_plus)
+MEDif <- MEDeg_25_39 /(MEDeg_25_39+MEDeg_40_64+MEDeg_65_plus)
+MDDif <- MDDeg_25_39 /(MDDeg_25_39+MDDeg_40_64+MDDeg_65_plus)
+MADif <- MADeg_25_39 /(MADeg_25_39+MADeg_40_64+MADeg_65_plus)
+MIDif <- MIDeg_25_39 /(MIDeg_25_39+MIDeg_40_64+MIDeg_65_plus)
+MNDif <- MNDeg_25_39 /(MNDeg_25_39+MNDeg_40_64+MNDeg_65_plus)
+MSDif <- MSDeg_25_39 /(MSDeg_25_39+MSDeg_40_64+MSDeg_65_plus)
+MODif <- MODeg_25_39 /(MODeg_25_39+MODeg_40_64+MODeg_65_plus)
+MTDif <- MTDeg_25_39 /(MTDeg_25_39+MTDeg_40_64+MTDeg_65_plus)
+NEDif <- NEDeg_25_39 /(NEDeg_25_39+NEDeg_40_64+NEDeg_65_plus)
+NVDif <- NVDeg_25_39 /(NVDeg_25_39+NVDeg_40_64+NVDeg_65_plus)
+NHDif <- NHDeg_25_39 /(NHDeg_25_39+NHDeg_40_64+NHDeg_65_plus)
+NJDif <- NJDeg_25_39 /(NJDeg_25_39+NJDeg_40_64+NJDeg_65_plus)
+NMDif <- NMDeg_25_39 /(NMDeg_25_39+NMDeg_40_64+NMDeg_65_plus)
+NYDif <- NYDeg_25_39 /(NYDeg_25_39+NYDeg_40_64+NYDeg_65_plus)
+NCDif <- NCDeg_25_39 /(NCDeg_25_39+NCDeg_40_64+NCDeg_65_plus)
+NDDif <- NDDeg_25_39 /(NDDeg_25_39+NDDeg_40_64+NDDeg_65_plus)
+OHDif <- OHDeg_25_39 /(OHDeg_25_39+OHDeg_40_64+OHDeg_65_plus)
+OKDif <- OKDeg_25_39 /(OKDeg_25_39+OKDeg_40_64+OKDeg_65_plus)
+ORDif <- ORDeg_25_39 /(ORDeg_25_39+ORDeg_40_64+ORDeg_65_plus)
+PADif <- PADeg_25_39 /(PADeg_25_39+PADeg_40_64+PADeg_65_plus)
+RIDif <- RIDeg_25_39 /(RIDeg_25_39+RIDeg_40_64+RIDeg_65_plus)
+SCDif <- SCDeg_25_39 /(SCDeg_25_39+SCDeg_40_64+SCDeg_65_plus)
+TNDif <- TNDeg_25_39 /(TNDeg_25_39+TNDeg_40_64+TNDeg_65_plus)
+TXDif <- TXDeg_25_39 /(TXDeg_25_39+TXDeg_40_64+TXDeg_65_plus)
+UTDif <- UTDeg_25_39 /(UTDeg_25_39+UTDeg_40_64+UTDeg_65_plus)
+VTDif <- VTDeg_25_39 /(VTDeg_25_39+VTDeg_40_64+VTDeg_65_plus)
+VADif <- VADeg_25_39 /(VADeg_25_39+VADeg_40_64+VADeg_65_plus)
+WADif <- WADeg_25_39 /(WADeg_25_39+WADeg_40_64+WADeg_65_plus)
+WVDif <- WVDeg_25_39 /(WVDeg_25_39+WVDeg_40_64+WVDeg_65_plus)
+WIDif <- WIDeg_25_39 /(WIDeg_25_39+WIDeg_40_64+WIDeg_65_plus)
+WYDif <- WYDeg_25_39 /(WYDeg_25_39+WYDeg_40_64+WYDeg_65_plus)
+
+
+finaldf
+lastdf <- rbind(finaldf, ALdf, AKdf, AZdf)
+lastdf
+
+
+#t.test(lastdf$Share_of_Deg_held_by_25_39,lastdf$National_Rate, paired = TRUE)
+
+t.test(ALdf$Share_of_Deg_held_by_25_39,ALdf$National_Rate)
+
+t.test(AKdf$Share_of_Deg_held_by_25_39,AKdf$National_Rate)
+
+t.test(AZdf$Share_of_Deg_held_by_25_39,AZdf$National_Rate)
+```
+
+
